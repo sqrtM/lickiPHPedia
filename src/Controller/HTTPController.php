@@ -42,16 +42,20 @@ class HTTPController extends AbstractController
     #[Route('/api/licks', name:"createlick", methods: ['POST'])]
     public function post(Request $request): JsonResponse
     {
-        $incoming_title = json_decode($request->getContent())->{'title'};
-        $incoming_lick = json_decode($request->getContent())->{'lick'};
+        $incoming_uuid = json_decode($request->getContent())->{'uuid'};
+        $incoming_music_string = json_decode($request->getContent())->{'music_string'};
+        $incoming_parent = json_decode($request->getContent())->{'parent'};
+        $incoming_date = json_decode($request->getContent())->{'date'};
 
         $con = pg_connect("host=$this->host dbname=$this->db user=$this->user password=$this->pass")
             or die ("Could not connect to server\n");
 
-        pg_prepare($con, "post", "INSERT INTO licks (title, lick) VALUES ($1, $2);");
-        pg_send_execute($con, "post", [$incoming_title, $incoming_lick]);
+        pg_prepare($con, "post", "INSERT INTO licks (uuid, music_string, parent, date) VALUES ($1, $2, $3, $4);");
+        pg_send_execute($con, "post", [$incoming_uuid, $incoming_music_string, $incoming_parent, $incoming_date]);
 
         pg_close($con);
+
+        echo $incoming_music_string;
 
         return $this->json(json_decode($request->getContent()));
     }
