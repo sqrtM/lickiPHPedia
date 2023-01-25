@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class HTTPController extends AbstractController
+class LickController extends AbstractController
 {
     private string $host = "rogue.db.elephantsql.com";
     private string $user = "xlxmgvws";
