@@ -70,4 +70,43 @@ class UserController extends AbstractController
         return $this->json(json_decode($request->getContent()));
     }
 
+    #[Route('/api/users/licks', name: "getsavedlicks", methods: ['POST'])]
+    public function get_saved_licks(Request $request): JsonResponse
+    {   
+        $incoming_email = json_decode($request->getContent())->{'email'};
+
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
+            or die("Could not connect to server\n");
+
+        pg_prepare($con, "post", "SELECT saved_licks FROM users WHERE email = $1");
+        $results = pg_execute($con, "post", [$incoming_email])
+            or die('Query failed: ' . pg_last_error());
+
+        $table = pg_fetch_all($results);
+        pg_close($con);
+
+        return $this->json($table);
+    }
+
+    #[Route('/api/users/licks', name: "insertsavedlick", methods: ['PATCH'])]
+    public function insert_saved_lick(Request $request): JsonResponse
+    {   
+        $incoming_email = json_decode($request->getContent())->{'email'};
+        $incoming_uuid = json_decode($request->getContent())->{'uuid'};
+
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
+            or die("Could not connect to server\n");
+
+        pg_prepare($con, "patch", "UPDATE users SET saved_licks = array_append(saved_licks, $1) WHERE email = $2;");
+        pg_send_execute($con, "patch", [$incoming_uuid, $incoming_email])
+            or die('Query failed: ' . pg_last_error());
+
+        pg_close($con);
+
+        return $this->json(json_decode($request->getContent()));
+    }
 }
