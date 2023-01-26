@@ -9,11 +9,16 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController
 {
-    private string $host = "rogue.db.elephantsql.com";
-    private string $user = "xlxmgvws";
-    private string $pass = "z96UT3uau2iSa2ws_zUz0g6LLADluT0k";
-    private string $db = "xlxmgvws";
 
+    private function init_env() 
+    {
+        return array(
+            "dbhost" => $this->getParameter('app.dbhost'),
+            "dbuser" => $this->getParameter('app.dbuser'),
+            "dbpass" => $this->getParameter('app.dbpass'),
+            "dbname" => $this->getParameter('app.dbname'),
+        );
+    }
 
     // returns true if successful, false otherwise
     #[Route('/api/get_user', name: 'get_user', methods: ['POST'])]
@@ -22,7 +27,9 @@ class UserController extends AbstractController
         $incoming_email = json_decode($request->getContent())->{'email'};
         $incoming_password = json_decode($request->getContent())->{'password'};
 
-        $con = pg_connect("host=$this->host dbname=$this->db user=$this->user password=$this->pass")
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
             or die("Could not connect to server\n");
 
         pg_prepare($con, "post", "SELECT id FROM users WHERE email = $1 AND password = crypt($2, password);");
@@ -49,7 +56,9 @@ class UserController extends AbstractController
         $incoming_email = json_decode($request->getContent())->{'email'};
         $incoming_password = json_decode($request->getContent())->{'password'};
 
-        $con = pg_connect("host=$this->host dbname=$this->db user=$this->user password=$this->pass")
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
             or die("Could not connect to server\n");
 
         pg_prepare($con, "post", "INSERT INTO users (email, password) VALUES ($1, crypt($2, gen_salt('bf')));");

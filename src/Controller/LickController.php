@@ -9,17 +9,23 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class LickController extends AbstractController
 {
-    private string $host = "rogue.db.elephantsql.com";
-    private string $user = "xlxmgvws";
-    private string $pass = "z96UT3uau2iSa2ws_zUz0g6LLADluT0k";
-    private string $db = "xlxmgvws";
-
+    private function init_env() 
+    {
+        return array(
+            "dbhost" => $this->getParameter('app.dbhost'),
+            "dbuser" => $this->getParameter('app.dbuser'),
+            "dbpass" => $this->getParameter('app.dbpass'),
+            "dbname" => $this->getParameter('app.dbname'),
+        );
+    }
 
     #[Route('/api/licks', name: 'licks', methods: ['GET'])]
     public function get(): JsonResponse
     {
 
-        $con = pg_connect("host=$this->host dbname=$this->db user=$this->user password=$this->pass")
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
             or die("Could not connect to server\n");
 
         $query = 'SELECT * FROM licks';
@@ -46,7 +52,9 @@ class LickController extends AbstractController
         $incoming_parent = json_decode($request->getContent())->{'parent'};
         $incoming_date = json_decode($request->getContent())->{'date'};
 
-        $con = pg_connect("host=$this->host dbname=$this->db user=$this->user password=$this->pass")
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
             or die("Could not connect to server\n");
 
         pg_prepare($con, "post", "INSERT INTO licks (uuid, music_string, parent, date) VALUES ($1, $2, $3, $4);");
@@ -65,8 +73,11 @@ class LickController extends AbstractController
     {
         $incoming_uuid = json_decode($request->getContent())->{'uuid'};
 
-        $con = pg_connect("host=$this->host dbname=$this->db user=$this->user password=$this->pass")
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login['dbhost']} dbname={$con_login['dbname']} user={$con_login['dbuser']} password={$con_login['dbpass']}")
             or die("Could not connect to server\n");
+
         pg_prepare($con, "delete", "DELETE FROM licks WHERE uuid = $1;");
         pg_send_execute($con, "delete", [$incoming_uuid]) or die ('Query failed: ' . pg_last_error());
 
