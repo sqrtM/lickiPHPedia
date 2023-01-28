@@ -1,5 +1,7 @@
 <?php
 
+// TODO : cleanup all api URIs 
+
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,8 +24,6 @@ class UserController extends AbstractController
         );
     }
 
-    // returns true if successful, false otherwise
-
     /**
      * Get User
      * 
@@ -31,7 +31,7 @@ class UserController extends AbstractController
      * 
      * @return jsonResponse boolean JsonResponse based on if a match has been found.
      */
-    #[Route('/api/get_user', name: 'loginUser', methods: ['POST'])]
+    #[Route('/api/loginUser', name: 'loginUser', methods: ['POST'])]
     public function loginUser(Request $request): JsonResponse
     {
         $incoming_email = json_decode($request->getContent())->{'email'};
@@ -53,7 +53,7 @@ class UserController extends AbstractController
     }
 
     // password is 72 max char
-    #[Route('/api/users', name: "createUser", methods: ['POST'])]
+    #[Route('/api/create_user', name: "createUser", methods: ['POST'])]
     public function createUser(Request $request): JsonResponse
     {
         $incoming_email = json_decode($request->getContent())->{'email'};
@@ -73,6 +73,8 @@ class UserController extends AbstractController
         
         return $this->json(json_decode($request->getContent()));
     }
+
+    
 
     #[Route('/api/users/licks', name: "getSavedLicks", methods: ['POST'])]
     public function getSavedLicks(Request $request): JsonResponse
