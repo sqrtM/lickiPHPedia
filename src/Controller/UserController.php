@@ -53,7 +53,7 @@ class UserController extends AbstractController
     }
 
     // password is 72 max char
-    #[Route('/api/create_user', name: "createUser", methods: ['POST'])]
+    #[Route('/api/createUser', name: "createUser", methods: ['POST'])]
     public function createUser(Request $request): JsonResponse
     {
         $incoming_email = json_decode($request->getContent())->{'email'};
@@ -64,14 +64,21 @@ class UserController extends AbstractController
         $con = pg_connect("host={$con_login->host()} dbname={$con_login->name()} user={$con_login->user()} password={$con_login->pass()}")
             or die("Could not connect to server\n");
 
-        pg_prepare($con, "createUser", "INSERT INTO users (email, password) VALUES ($1, crypt($2, gen_salt('bf')));");
-        pg_send_execute($con, "createUser", [$incoming_email, $incoming_password])
-            or die('Query failed: ' . pg_last_error());
+        $query = "SELECT * FROM users WHERE email = '{$incoming_email}'";
+        $results = pg_query($con, $query) or die('Query failed: ' . pg_last_error());
+        $table = pg_fetch_all($results);
+
+        if (count($table) == 0) {
+            pg_prepare($con, "createUser", "INSERT INTO users (email, password) VALUES ($1, crypt($2, gen_salt('bf')));");
+            pg_send_execute($con, "createUser", [$incoming_email, $incoming_password])
+                or die('Query failed: ' . pg_last_error());
+            // set a cookie...
+        }
 
         pg_close($con);
         unset($con); unset($con_login);
         
-        return $this->json(json_decode($request->getContent()));
+        return $this->json(count($table) > 0 ? false : true);
     }
 
     

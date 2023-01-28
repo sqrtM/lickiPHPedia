@@ -41,6 +41,26 @@ class LickController extends AbstractController
         return $this->json($table);
     }
 
+    #[Route('/api/getLick', name: 'getLick', methods: ['POST'])]
+    public function getLick(Request $request): JsonResponse
+    {
+        $incoming_uuid = json_decode($request->getContent())->{'uuid'};
+
+        $con_login = $this->init_env();
+
+        $con = pg_connect("host={$con_login->host()} dbname={$con_login->name()} user={$con_login->user()} password={$con_login->pass()}")
+            or die("Could not connect to server\n");
+
+        $query = "SELECT * FROM licks WHERE uuid = '{$incoming_uuid}'";
+        $results = pg_query($con, $query) or die('Query failed: ' . pg_last_error());
+        $table = pg_fetch_all($results);
+        
+        pg_close($con);
+        unset($con); unset($con_login);
+
+        return $this->json($table);
+    }
+
 
     #[Route('/api/licks', name: "createNewLick", methods: ['POST'])]
     public function createNewLick(Request $request): JsonResponse
