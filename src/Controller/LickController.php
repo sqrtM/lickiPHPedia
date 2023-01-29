@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entities\DatabaseConnectionCredentials;
 
+// TODO : when a lick has a valid parent ID, find that parent in the postgres database and give it a reference to its child. 
+
 
 class LickController extends AbstractController
 {
@@ -54,9 +56,10 @@ class LickController extends AbstractController
         $query = "SELECT * FROM licks WHERE uuid = '{$incoming_uuid}'";
         $results = pg_query($con, $query) or die('Query failed: ' . pg_last_error());
         $table = pg_fetch_all($results);
-        
+
         pg_close($con);
-        unset($con); unset($con_login);
+        unset($con);
+        unset($con_login);
 
         return $this->json($table);
     }

@@ -47,7 +47,8 @@ class UserController extends AbstractController
 
         $table = pg_fetch_all($results);
         pg_close($con);
-        unset($con); unset($con_login);
+        unset($con);
+        unset($con_login);
 
         return $this->json(count($table) > 0 ? true : false);
     }
@@ -76,16 +77,17 @@ class UserController extends AbstractController
         }
 
         pg_close($con);
-        unset($con); unset($con_login);
-        
+        unset($con);
+        unset($con_login);
+
         return $this->json(count($table) > 0 ? false : true);
     }
 
-    
+
 
     #[Route('/api/users/licks', name: "getSavedLicks", methods: ['POST'])]
     public function getSavedLicks(Request $request): JsonResponse
-    {   
+    {
         $incoming_email = json_decode($request->getContent())->{'email'};
 
         $con_login = $this->init_env();
@@ -99,14 +101,15 @@ class UserController extends AbstractController
 
         $table = pg_fetch_all($results);
         pg_close($con);
-        unset($con); unset($con_login);
+        unset($con);
+        unset($con_login);
 
         return $this->json($table);
     }
 
     #[Route('/api/users/licks', name: "addSavedLick", methods: ['PATCH'])]
     public function addSavedLick(Request $request): JsonResponse
-    {   
+    {
         $incoming_email = json_decode($request->getContent())->{'email'};
         $incoming_uuid = json_decode($request->getContent())->{'uuid'};
 
@@ -120,7 +123,8 @@ class UserController extends AbstractController
             or die('Query failed: ' . pg_last_error());
 
         pg_close($con);
-        unset($con); unset($con_login);
+        unset($con);
+        unset($con_login);
 
         return $this->json(json_decode($request->getContent()));
     }
