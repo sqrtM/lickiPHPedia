@@ -8,9 +8,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Entities\DatabaseConnectionCredentials;
 
-// TODO : when a lick has a valid parent ID, find that parent in the postgres database and give it a reference to its child. 
-
-
 class LickController extends AbstractController
 {
 
@@ -32,7 +29,7 @@ class LickController extends AbstractController
         $con = pg_connect("host={$con_login->host()} dbname={$con_login->name()} user={$con_login->user()} password={$con_login->pass()}")
             or die("Could not connect to server\n");
 
-        $query = 'SELECT * FROM licks';
+        $query = 'SELECT * FROM licks ORDER BY date';
         $results = pg_query($con, $query) or die('Query failed: ' . pg_last_error());
 
         $table = pg_fetch_all($results);
@@ -81,6 +78,12 @@ class LickController extends AbstractController
         pg_prepare($con, "createNewLick", "INSERT INTO licks (uuid, music_string, parent, date) VALUES ($1, $2, $3, $4);");
         pg_send_execute($con, "createNewLick", [$incoming_uuid, $incoming_music_string, $incoming_parent, $incoming_date])
             or die('Query failed: ' . pg_last_error());
+
+        if (strlen($incoming_parent) > 0) {
+            pg_prepare($con, "addChild", "UPDATE licks SET children = array_append(children, $1) WHERE uuid = $2;");
+            pg_send_execute($con, "addChild", [$incoming_uuid, $incoming_parent])
+                or die('Query failed: ' . pg_last_error());
+        }
 
         pg_close($con);
         unset($con);
