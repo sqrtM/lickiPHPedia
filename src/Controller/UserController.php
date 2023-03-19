@@ -25,7 +25,9 @@ use Symfony\Component\Routing\Annotation\Route;
 class UserController extends AbstractController
 {
     /**
-     * Undocumented function.
+     * Undocumented function
+     *
+     * @return string
      */
     private function initEnv(): string
     {
@@ -69,6 +71,13 @@ class UserController extends AbstractController
 
     // password is 72 max char
     #[Route('/api/createUser', name: 'createUser', methods: array('POST'))]
+    /**
+     * Undocumented function
+     *
+     * @param Request $request undocumented param
+     *
+     * @return JsonResponse
+     */
     public function createUser(Request $request): JsonResponse
     {
         $incoming_email = json_decode($request->getContent())->{'email'};
@@ -102,9 +111,11 @@ class UserController extends AbstractController
 
     #[Route('/api/users/licks', name: 'getSavedLicks', methods: array('POST'))]
     /**
-     * Undocumented function.
+     * Undocumented function
      *
      * @param Request $request undocumented param
+     *
+     * @return JsonResponse
      */
     public function getSavedLicks(Request $request): JsonResponse
     {
@@ -128,9 +139,11 @@ class UserController extends AbstractController
 
     #[Route('/api/users/licks', name: 'addSavedLick', methods: array('PATCH'))]
     /**
-     * Undocumented function.
+     * Undocumented function
      *
      * @param Request $request undocumented param
+     *
+     * @return JsonResponse
      */
     public function addSavedLick(Request $request): JsonResponse
     {
