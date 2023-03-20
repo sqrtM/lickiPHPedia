@@ -20,16 +20,22 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class UserManager implements IUser
 {
-    private string $email;
+    private string|null $email;
     private string|null $password;
     private string|null $uuid;
+    private Request $request;
     private \PgSql\Connection $con;
 
     public function __construct(Request $request, \PgSql\Connection $connection)
     {
         $this->email = json_decode($request->getContent())->{'email'};
-        $this->password = json_decode($request->getContent())->{'password'} or null;
-        $this->email = json_decode($request->getContent())->{'uuid'} or null;
+        if (isset(json_decode($request->getContent())->{'password'})) {
+            $this->password = json_decode($request->getContent())->{'password'};
+        }
+        if (isset(json_decode($request->getContent())->{'uuid'})) {
+            $this->password = json_decode($request->getContent())->{'uuid'};
+        }
+        $this->request = $request;
 
         $this->con = $connection;
     }
@@ -58,7 +64,8 @@ class UserManager implements IUser
 
     public function addSavedLick()
     {
-        if ($this->lickExists()) {
+        $lick = new LickManager($this->con, $this->request);
+        if ($lick->exists()) {
             pg_query_params(
                 $this->con,
                 'UPDATE users SET saved_licks = array_append(saved_licks, $1) WHERE email = $2;',
@@ -67,14 +74,5 @@ class UserManager implements IUser
         } else {
             throw new NoMatchingLickException();
         }
-    }
-
-    private function lickExists()
-    {
-        return false === pg_query_params(
-            $this->con,
-            'SELECT uuid FROM licks WHERE uuid = $1',
-            array($this->uuid)
-        ) ? false : true;
     }
 }

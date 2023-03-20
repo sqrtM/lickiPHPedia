@@ -60,7 +60,6 @@ class UserController extends AbstractControllerWithEnv
             }
         } catch (PostgresQueryException | InvalidPasswordException $e) {
             echo $e->getMessage();
-            exit;
         } finally {
             pg_close($con);
         }
