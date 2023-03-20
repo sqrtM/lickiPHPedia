@@ -2,8 +2,9 @@
 
 namespace App\Controller;
 
-use App\Entities\DatabaseConnectionCredentials;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use App\Exception\PostgresConnectionException;
+use App\Exception\PostgresQueryException;
+use App\Service\LickCreator;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -20,39 +21,22 @@ use Symfony\Component\Routing\Annotation\Route;
  *
  * @see       http://url.com
  */
-class LickController extends AbstractController
+class LickController extends AbstractControllerWithEnv
 {
-    /**
-     * Undocumented function.
-     */
-    private function initEnv(): string
-    {
-        $dbCredentials = new DatabaseConnectionCredentials(
-            $this->getParameter('app.dbhost'),
-            $this->getParameter('app.dbuser'),
-            $this->getParameter('app.dbpass'),
-            $this->getParameter('app.dbname'),
-        );
-        return $dbCredentials->connectionString();
-    }
-
     #[Route('/api/licks', name: 'getAllLicks', methods: array('GET'))]
     /**
      * Undocumented function.
      */
     public function getAllLicks(): JsonResponse
     {
-        $con_login = $this->initEnv();
-
-        $con = pg_connect($con_login)
+        $con = pg_connect($this->getConnectionString())
         or exit("Could not connect to server\n");
 
         $query = 'SELECT * FROM licks ORDER BY date';
-        $results = pg_query($con, $query) or exit('Query failed: ' . pg_last_error());
+        $results = pg_query($con, $query) or exit('Query failed: ' . pg_last_error($con));
 
         $table = pg_fetch_all($results);
         pg_close($con);
-        unset($con, $con_login);
 
         return $this->json($table);
     }
@@ -67,57 +51,40 @@ class LickController extends AbstractController
     {
         $incoming_uuid = json_decode($request->getContent())->{'uuid'};
 
-        $con_login = $this->initEnv();
-
-        $con = pg_connect($con_login)
+        $con = pg_connect($this->getConnectionString())
         or exit("Could not connect to server\n");
 
         $query = "SELECT * FROM licks WHERE uuid = '{$incoming_uuid}'";
-        $results = pg_query($con, $query) or exit('Query failed: ' . pg_last_error());
+        $results = pg_query($con, $query) or exit('Query failed: ' . pg_last_error($con));
         $table = pg_fetch_all($results);
 
         pg_close($con);
-        unset($con, $con_login);
 
         return $this->json($table);
     }
 
     #[Route('/api/licks', name: 'createNewLick', methods: array('POST'))]
     /**
-     * Summary of createNewLick.
+     * Undocumented function.
+     *
+     * @param Request $request undocumented param
      */
     public function createNewLick(Request $request): JsonResponse
     {
-        $incoming_uuid = json_decode($request->getContent())->{'uuid'};
-        $incoming_music_string = json_decode($request->getContent())->{'music_string'};
-        $incoming_parent = json_decode($request->getContent())->{'parent'};
-        $incoming_date = json_decode($request->getContent())->{'date'};
+        try {
+            $con = pg_connect($this->getConnectionString())
+            or throw new PostgresConnectionException();
 
-        $con_login = $this->initEnv();
-
-        $con = pg_connect($con_login)
-        or exit("Could not connect to server\n");
-
-        pg_prepare(
-            $con,
-            'createNewLick',
-            'INSERT INTO licks (uuid, music_string, parent, date) VALUES ($1, $2, $3, $4);'
-        );
-
-        pg_send_execute(
-            $con,
-            'createNewLick',
-            array($incoming_uuid, $incoming_music_string, $incoming_parent, $incoming_date)
-        ) or exit('Query failed: ' . pg_last_error());
-
-        if (strlen($incoming_parent) > 0) {
-            pg_prepare($con, 'addChild', 'UPDATE licks SET children = array_append(children, $1) WHERE uuid = $2;');
-            pg_send_execute($con, 'addChild', array($incoming_uuid, $incoming_parent))
-            or exit('Query failed: ' . pg_last_error());
+            $lickCreator = new LickCreator($request, $con);
+            $lickCreator->insertLickIntoDatabase();
+            if ($lickCreator->hasParent()) {
+                $lickCreator->appendChildToParent();
+            }
+        } catch (PostgresQueryException | PostgresConnectionException $e) {
+            echo $e->getMessage();
+        } finally {
+            pg_close($con);
         }
-
-        pg_close($con);
-        unset($con, $con_login);
 
         return $this->json(json_decode($request->getContent()));
     }
@@ -132,16 +99,15 @@ class LickController extends AbstractController
     {
         $incoming_uuid = json_decode($request->getContent())->{'uuid'};
 
-        $con_login = $this->initEnv();
+        $con_login = $this->getConnectionString();
 
         $con = pg_connect($con_login)
         or exit("Could not connect to server\n");
 
         pg_prepare($con, 'deleteLick', 'DELETE FROM licks WHERE uuid = $1;');
         pg_send_execute($con, 'deleteLick', array($incoming_uuid))
-        or exit('Query failed: ' . pg_last_error());
+        or exit('Query failed: ' . pg_last_error($con));
 
-        pg_close($con);
         unset($con, $con_login);
 
         return $this->json($incoming_uuid);
