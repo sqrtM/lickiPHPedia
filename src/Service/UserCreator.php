@@ -40,10 +40,9 @@ class UserCreator implements IUser
     {
         $results = pg_query_params(
             $this->con,
-            "SELECT * FROM users WHERE email = '$1'",
+            "SELECT * FROM users WHERE email = $1",
             array($this->email)
         ) or throw new PostgresQueryException($this->con);
-
         return pg_fetch_all($results);
     }
 
@@ -54,5 +53,6 @@ class UserCreator implements IUser
             "INSERT INTO users (email, password) VALUES ($1, crypt($2, gen_salt('bf')));",
             array($this->email, $this->password)
         ) or throw new PostgresQueryException($this->con);
+        pg_get_result($this->con);
     }
 }

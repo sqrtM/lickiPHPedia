@@ -4,6 +4,7 @@
 
 namespace App\Controller;
 
+use App\Exception\EmailAlreadyInUseException;
 use App\Exception\InvalidPasswordException;
 use App\Exception\NoMatchingLickException;
 use App\Exception\PostgresConnectionException;
@@ -31,6 +32,7 @@ class UserController extends AbstractControllerWithEnv
     #[Route('/api/loginUser', name: 'loginUser', methods: array('POST'))]
     public function loginUser(Request $request): JsonResponse
     {
+        $userInfo = false;
         try {
             $con = pg_connect($this->getConnectionString())
             or throw new PostgresConnectionException();
@@ -42,10 +44,17 @@ class UserController extends AbstractControllerWithEnv
         } finally {
             pg_close($con);
         }
-
-        return $this->json(count($userInfo) > 0 ? true : false);
+        return $this->json($userInfo);
     }
 
+    /**
+     * When the function finds that another, already existing account is
+     * using the email which was provided by the user, it will throw an exception.
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     #[Route('/api/createUser', name: 'createUser', methods: array('POST'))]
     public function createUser(Request $request): JsonResponse
     {
@@ -55,15 +64,13 @@ class UserController extends AbstractControllerWithEnv
 
             $userCreator = new UserCreator($request, $con);
             $userInfo = $userCreator->getUserInfo();
-            if (empty($userInfo)) {
-                $userCreator->createUser();
-            }
-        } catch (PostgresQueryException | InvalidPasswordException $e) {
-            echo $e->getMessage();
+            empty($userInfo) ? $userCreator->createUser() : throw new EmailAlreadyInUseException();
+        } catch (PostgresQueryException | InvalidPasswordException | EmailAlreadyInUseException $e) {
+            $exception = $e->getMessage();
         } finally {
             pg_close($con);
         }
-        return $this->json(!empty($userInfo) ? false : true);
+        return $this->json(!empty($userInfo) ? $exception : true);
     }
 
     #[Route('/api/users/licks', name: 'getSavedLicks', methods: array('POST'))]

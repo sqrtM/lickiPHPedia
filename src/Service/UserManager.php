@@ -7,7 +7,7 @@ use App\Exception\PostgresQueryException;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Undocumented class
+ * Manager class for dealing with changing user info in the DB.
  * PHP Version 8.2.0.
  *
  * @category  Groups a series of packages together.
@@ -29,12 +29,15 @@ class UserManager implements IUser
     public function __construct(Request $request, \PgSql\Connection $connection)
     {
         $this->email = json_decode($request->getContent())->{'email'};
+
         if (isset(json_decode($request->getContent())->{'password'})) {
             $this->password = json_decode($request->getContent())->{'password'};
         }
+
         if (isset(json_decode($request->getContent())->{'uuid'})) {
             $this->password = json_decode($request->getContent())->{'uuid'};
         }
+
         $this->request = $request;
 
         $this->con = $connection;
@@ -44,10 +47,9 @@ class UserManager implements IUser
     {
         $results = pg_query_params(
             $this->con,
-            'SELECT id FROM users WHERE email = $1 AND password = crypt($2, password);',
+            "SELECT * FROM users WHERE email = $1 AND password = crypt($2, password);",
             array($this->email, $this->password)
         ) or throw new PostgresQueryException($this->con);
-
         return pg_fetch_all($results);
     }
 
@@ -58,7 +60,6 @@ class UserManager implements IUser
             'SELECT saved_licks FROM users WHERE email = $1',
             array($this->email)
         ) or throw new PostgresQueryException($this->con);
-
         return pg_fetch_all($results);
     }
 

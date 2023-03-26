@@ -65,5 +65,6 @@ class LickCreator
             $updateQuery,
             array($this->uuid, $this->parent)
         ) or throw new PostgresQueryException($this->con);
+        pg_get_result();
     }
 }
